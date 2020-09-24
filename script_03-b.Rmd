@@ -28,8 +28,8 @@ sep_old <-
   select( -instructor_full_name, -course_section_code, -(grad:total)) %>%
   rename_with(~ str_replace(.x, "course_", "")) %>% 
   group_by(id, title, name, department) %>% 
-  summarize(u_grad = sum(u_grad), .groups = "drop") %>% 
-  filter(u_grad > 10)
+  summarize(old_u_grad = sum(u_grad), .groups = "drop") %>% 
+  filter(old_u_grad > 10)
 
 
 sep_new <- 
@@ -40,8 +40,8 @@ sep_new <-
   select( -instructor_full_name, -course_section_code, -(grad:total)) %>%
   rename_with(~ str_replace(.x, "course_", "")) %>% 
   group_by(id, title, name, department) %>% 
-  summarize(u_grad = sum(u_grad), .groups = "drop") %>% 
-  filter(u_grad > 10)
+  summarize(new_u_grad = sum(u_grad), .groups = "drop") %>% 
+  filter(new_u_grad > 10)
 ```
 
 ### Scene 1
@@ -50,9 +50,39 @@ sep_new <-
 
 a) Make a table using **gt** which shows the five courses with the biggest increase. Use the [How to make a table](https://davidkane9.github.io/PPBDS/tools.html#how-to-make-a-table) section of *The Primer*.
 
+```{r}
+classes_inc <- inner_join(sep_old, sep_new, by = c("id", "title", "name", "department")) %>%
+ mutate(change = (new_u_grad - old_u_grad)) %>%
+  arrange(desc(change)) %>%
+  slice(1:5)
+
+classes_inc %>% gt()
+```
+
+
+
 b) Make a table using **gt** which shows the five courses with the biggest decrease.
+```{r}
+classes_dec <- inner_join(sep_old, sep_new, by = c("id", "title", "name", "department")) %>%
+  mutate(change = (new_u_grad - old_u_grad)) %>%
+  arrange((change)) %>%
+  slice(1:5)
+
+classes_dec %>% gt() %>%
+  tab_header(title = "Biggest Decreases in Enrollment")%>%
+  cols_label(title = "Number",
+             name = "Title",
+             new_u_grad = "Enrollment")
+```
 
 c) Make a nice looking graphic which shows these 10 courses.
+```{r}
+total <- rbind(classes_big_dec, classes_big_inc)
+
+ggplot(total, aes(x = name, y = change, fill = department)) + geom_col() +
+  #theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  coord_flip() + theme_bw()
+```
 
 d) Write down some thoughts about what might explain these increases and decreases. Or is it all just random? How would we know?
 
